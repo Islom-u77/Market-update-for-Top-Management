@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banking Intelligence Portal</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .line-clamp-1 { 
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+        }
+        .line-clamp-2 { 
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .line-clamp-3 { 
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .mobile-text-sm { font-size: 0.875rem; }
+            .mobile-text-base { font-size: 1rem; }
+            .mobile-text-lg { font-size: 1.125rem; }
+            .mobile-text-xl { font-size: 1.25rem; }
+            .mobile-text-2xl { font-size: 1.5rem; }
+            .mobile-px-4 { padding-left: 1rem; padding-right: 1rem; }
+            .mobile-py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+            .mobile-gap-2 { gap: 0.5rem; }
+            .mobile-mb-3 { margin-bottom: 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Icons
+        const Globe = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
+        const MapPin = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+        const TrendingUp = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>;
+        const BarChart3 = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>;
+        const ArrowLeft = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
+        const ExternalLink = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>;
+
+        // DATA - Update your content here
+        const newsData = {
+            uzbekistan: [
+                { id: 'uz1', title: 'Central Bank Announces New Digital Banking Regulations', summary: 'New regulatory framework aims to enhance digital banking security and innovation in Uzbekistan.', content: 'The Central Bank of Uzbekistan has introduced comprehensive regulations for digital banking services, effective from Q2 2026. The new framework includes enhanced KYC requirements, cybersecurity standards, and provisions for digital-only banking licenses.', date: '2026-01-15', category: 'Regulation' },
+                { id: 'uz2', title: 'Uzbekistan Banking Sector Shows 15% Growth in Q4 2025', summary: 'Strong economic performance drives banking sector expansion.', content: 'The Uzbekistan banking sector demonstrated robust growth with total assets increasing by 15% year-over-year. Retail lending grew by 22%, while corporate lending increased by 18%.', date: '2026-01-14', category: 'Market Update' },
+                { id: 'uz3', title: 'Major Banks Partner for Cross-Border Payment Platform', summary: 'Five leading banks launch unified regional payment system.', content: 'Five major Uzbekistan banks have announced a strategic partnership to develop a unified cross-border payment platform. The initiative aims to reduce transaction costs by 40%.', date: '2026-01-13', category: 'Innovation' },
+                { id: 'uz4', title: 'Green Finance Initiative Receives Government Backing', summary: 'New fund established to support sustainable banking projects.', content: 'The government has allocated $500 million to support green finance initiatives in the banking sector. Banks can now access preferential funding for environmentally sustainable projects.', date: '2026-01-12', category: 'Sustainability' },
+                { id: 'uz5', title: 'SME Lending Programs Expanded Nationwide', summary: 'Banks introduce new credit lines for small and medium enterprises.', content: 'Major banks have launched expanded SME lending programs with simplified application processes and flexible terms. The programs target technology, agriculture, and manufacturing sectors.', date: '2026-01-11', category: 'Lending' },
+                { id: 'uz6', title: 'Banking Cybersecurity Framework Updated', summary: 'Enhanced security protocols implemented across all institutions.', content: 'The banking sector has adopted new cybersecurity protocols following international best practices. All banks must implement multi-factor authentication and real-time fraud detection.', date: '2026-01-10', category: 'Security' },
+                { id: 'uz7', title: 'Islamic Banking Services Gain Momentum', summary: 'Sharia-compliant products see 30% increase in adoption.', content: 'Islamic banking services have experienced significant growth with deposits in Sharia-compliant accounts increasing by 30% in the past quarter.', date: '2026-01-09', category: 'Product Innovation' },
+                { id: 'uz8', title: 'Banking Sector Employment Reaches Record High', summary: 'Digital transformation creates 15,000 new positions.', content: 'The banking sector has added 15,000 new positions in 2025, driven by digital transformation initiatives. New roles focus on data analytics and cybersecurity.', date: '2026-01-08', category: 'Employment' }
+            ],
+            world: {
+                west: [
+                    { id: 'w1', title: 'Federal Reserve Maintains Interest Rates', summary: 'Fed holds rates steady amid economic uncertainty.', content: 'The Federal Reserve has decided to maintain current interest rates at 5.25-5.50% following its January meeting.', date: '2026-01-15', category: 'Monetary Policy' },
+                    { id: 'w2', title: 'European Banks Report Strong Q4 Earnings', summary: 'Major European financial institutions exceed profit expectations.', content: 'Leading European banks have reported stronger-than-expected Q4 earnings, with net profits up 12% year-over-year.', date: '2026-01-14', category: 'Earnings' }
+                ],
+                middleEast: [
+                    { id: 'm1', title: 'GCC Banks Expand Digital Services', summary: 'Gulf banks invest $2 billion in fintech partnerships.', content: 'Gulf Cooperation Council banks have announced major investments in digital banking platforms including AI-powered customer service.', date: '2026-01-15', category: 'Digital Banking' },
+                    { id: 'm2', title: 'Saudi Arabia Launches Open Banking Framework', summary: 'New regulations promote financial data sharing and innovation.', content: 'Saudi Arabian Monetary Authority has introduced comprehensive open banking regulations enabling secure data sharing.', date: '2026-01-13', category: 'Regulation' }
+                ],
+                cis: [
+                    { id: 'c1', title: 'Regional Payment Integration Accelerates', summary: 'CIS countries advance unified payment infrastructure.', content: 'Commonwealth of Independent States members have made significant progress in integrating payment systems for instant cross-border transfers.', date: '2026-01-14', category: 'Payments' },
+                    { id: 'c2', title: 'Kazakhstan Banking Sector Implements Basel III', summary: 'Banks strengthen capital requirements under new standards.', content: 'Kazakhstan has fully implemented Basel III banking regulations, strengthening the sector resilience and international credibility.', date: '2026-01-12', category: 'Regulation' }
+                ],
+                east: [
+                    { id: 'e1', title: 'China Eases Banking Regulations for Foreign Investors', summary: 'New policies attract international financial institutions.', content: 'Chinese regulators have announced relaxed rules for foreign banks, including reduced capital requirements and expanded business scope.', date: '2026-01-15', category: 'International Banking' },
+                    { id: 'e2', title: 'Singapore Fintech Hub Reaches New Milestone', summary: '500+ fintech companies now operating in Singapore.', content: 'Singapore has cemented its position as Asia leading fintech hub with over 500 companies now operating in the city-state.', date: '2026-01-13', category: 'Fintech' }
+                ]
+            }
+        };
+
+        const insightsData = [
+            { id: 'i1', title: 'Digital Transformation ROI Analysis', summary: 'Comprehensive analysis of digital banking investments and returns across the sector', content: 'Our analysis reveals that banks investing heavily in digital transformation are seeing 3-4x ROI within 18 months. Key drivers include reduced operational costs, increased customer acquisition, and improved retention.', date: '2026-01-15', category: 'Strategic Analysis', impact: 'High', keyPoints: ['3-4x ROI within 18 months', '35% reduction in operational costs', '45% growth in customer acquisition', '60% increase in customer lifetime value'] },
+            { id: 'i2', title: 'Risk Concentration in SME Lending Portfolio', summary: 'Analysis of sector concentration risks and diversification opportunities', content: 'Current SME portfolio shows 42% concentration in retail and services sectors, creating vulnerability to consumer spending fluctuations. Recommendation: Diversify into technology and healthcare sectors.', date: '2026-01-14', category: 'Risk Management', impact: 'Critical', keyPoints: ['42% concentration in vulnerable sectors', '2-3x higher default rates in downturns', '40% lower defaults in tech/healthcare', '25% risk reduction through diversification'] },
+            { id: 'i3', title: 'Competitive Analysis: Market Share Opportunities', summary: 'Strategic positioning analysis and growth opportunities in key segments', content: 'Market analysis reveals opportunities in affluent customer segment where our market share is only 12%. HNI customers generate 4x revenue per customer with 90% lower acquisition costs.', date: '2026-01-13', category: 'Market Strategy', impact: 'High', keyPoints: ['Only 12% share in HNI segment', '4x revenue per HNI customer', '90% lower acquisition costs', '25% market share target in 24 months'] },
+            { id: 'i4', title: 'Operational Efficiency: Branch Network Optimization', summary: 'Data-driven approach to branch transformation and cost optimization', content: 'Branch analysis shows 30% operate below break-even, contributing to 15% of costs while serving only 8% of transactions. Recommendation: Transform underperforming branches into digital advisory centers.', date: '2026-01-12', category: 'Operations', impact: 'High', keyPoints: ['30% of branches below break-even', '78% prefer digital channels', '$12M annual cost reduction', '14-month payback period'] },
+            { id: 'i5', title: 'Cybersecurity Investment Priorities', summary: 'Assessment of security vulnerabilities and required investments', content: 'Security audit reveals critical gaps in API security and fraud detection. Banks with advanced security frameworks experience 85% fewer successful attacks. Immediate $8M investment recommended.', date: '2026-01-11', category: 'Technology & Security', impact: 'Critical', keyPoints: ['Critical gaps in API security', '85% fewer attacks with advanced frameworks', '$8M investment required', 'Prevents $45M in potential fraud losses'] },
+            { id: 'i6', title: 'Customer Experience Gap Analysis', summary: 'Insights from customer satisfaction data and competitive benchmarking', content: 'NPS analysis shows we trail market leaders by 18 points. Primary pain points: loan approval time, mobile app rating, and customer service response time. 65% of exits cite slow service.', date: '2026-01-10', category: 'Customer Experience', impact: 'High', keyPoints: ['18-point NPS gap', '65% exits cite slow service', 'Loan approval 6x slower', 'Target NPS 68 in 6 months'] },
+            { id: 'i7', title: 'Regulatory Compliance: Upcoming Changes Impact', summary: 'Analysis of new regulatory requirements and preparation roadmap', content: 'Basel III and enhanced AML regulations require infrastructure upgrades by Q3 2026. Compliance costs estimated at $15M but early adoption creates competitive advantage.', date: '2026-01-09', category: 'Regulatory & Compliance', impact: 'Critical', keyPoints: ['$15M investment by Q3 2026', 'Only 20% of banks prepared', 'Non-compliance penalties $25-50M', 'Early adoption unlocks $30M opportunities'] },
+            { id: 'i8', title: 'Talent Strategy: Building Future-Ready Workforce', summary: 'Skills gap analysis and talent development recommendations', content: 'Critical skills gaps in data science, AI/ML, and digital product management. Market demand growing 40% annually. Recommendation: Establish Digital Academy for upskilling 200 employees annually.', date: '2026-01-08', category: 'Human Capital', impact: 'High', keyPoints: ['Critical shortage in data science', '40% annual growth in demand', 'Current recruitment takes 6 months', '$5M investment saves $8M in hiring'] }
+        ];
+
+        const analyticsData = [
+            { id: 'a1', title: 'Banking Sector Asset Growth', summary: 'Year-over-year analysis of total banking assets' },
+            { id: 'a2', title: 'Loan Portfolio Distribution', summary: 'Current breakdown of lending activities by sector' },
+            { id: 'a3', title: 'Digital Banking Adoption Rate', summary: 'Percentage of customers using digital channels' },
+            { id: 'a4', title: 'Non-Performing Loans Ratio', summary: 'NPL trend analysis across the banking sector' }
+        ];
+
+        function BankDashboard() {
+            const [selectedArticle, setSelectedArticle] = useState(null);
+            const [activeTab, setActiveTab] = useState('news');
+
+            if (selectedArticle) {
+                return (
+                    <div className="min-h-screen bg-gray-100">
+                        <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+                            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+                                <button onClick={() => setSelectedArticle(null)} className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">
+                                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Back to Dashboard
+                                </button>
+                            </div>
+                        </header>
+                        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+                            <article className="bg-white rounded-lg shadow-lg p-4 sm:p-8">
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                                    <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded">{selectedArticle.category}</span>
+                                    {selectedArticle.impact && (
+                                        <span className={`text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded ${selectedArticle.impact === 'Critical' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{selectedArticle.impact} Impact</span>
+                                    )}
+                                    <span className="text-xs sm:text-sm text-gray-500">{selectedArticle.date}</span>
+                                </div>
+                                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">{selectedArticle.title}</h1>
+                                <div className="prose max-w-none">
+                                    <p className="text-base sm:text-lg text-gray-700 leading-relaxed mb-4 sm:mb-6">{selectedArticle.summary}</p>
+                                    {selectedArticle.keyPoints && (
+                                        <div className="bg-blue-50 border-l-4 border-blue-600 p-4 sm:p-6 mb-4 sm:mb-6 rounded-r">
+                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Key Takeaways</h3>
+                                            <ul className="space-y-2">
+                                                {selectedArticle.keyPoints.map((point, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2 sm:gap-3">
+                                                        <span className="text-blue-600 font-bold text-base sm:text-lg">→</span>
+                                                        <span className="text-sm sm:text-base text-gray-800">{point}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <div className="border-l-4 border-blue-600 pl-3 sm:pl-4 mb-4 sm:mb-6">
+                                        <p className="text-sm sm:text-base text-gray-800 leading-relaxed">{selectedArticle.content}</p>
+                                    </div>
+                                </div>
+                            </article>
+                        </main>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-100">
+                    <header className="bg-white shadow-sm border-b sticky top-0 z-10">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Banking Intelligence Portal</h1>
+                            <p className="text-sm sm:text-base text-gray-600 mt-1">Executive Dashboard for Market Insights</p>
+                        </div>
+                    </header>
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                        <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 overflow-x-auto pb-2">
+                            <button onClick={() => setActiveTab('news')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'news' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />News & Updates
+                            </button>
+                            <button onClick={() => setActiveTab('insights')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'insights' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />Key Insights
+                            </button>
+                            <button onClick={() => setActiveTab('analytics')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'analytics' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
+                                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />Market Dynamics
+                            </button>
+                        </div>
+
+                        {activeTab === 'news' && (
+                            <div className="space-y-6 sm:space-y-8">
+                                <section>
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                                        <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Uzbekistan Banking & Finance</h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                        {newsData.uzbekistan.map(article => (
+                                            <div key={article.id} onClick={() => setSelectedArticle(article)} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-3 sm:p-4 border border-gray-200">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">{article.category}</span>
+                                                    <span className="text-xs text-gray-500">{article.date}</span>
+                                                </div>
+                                                <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base">{article.title}</h3>
+                                                <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{article.summary}</p>
+                                                <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Read more <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                                <section>
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4"><Globe className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Global Markets</h2></div>
+                                    {Object.entries(newsData.world).map(([region, articles]) => (
+                                        <div key={region} className="mb-4 sm:mb-6">
+                                            <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3 capitalize">{region === 'middleEast' ? 'Middle East' : region === 'cis' ? 'CIS Region' : region === 'west' ? 'Western Markets' : 'Eastern Markets'}</h3>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                                {articles.map(article => (
+                                                    <div key={article.id} onClick={() => setSelectedArticle(article)} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-3 sm:p-4 border border-gray-200">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">{article.category}</span>
+                                                            <span className="text-xs text-gray-500">{article.date}</span>
+                                                        </div>
+                                                        <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base">{article.title}</h3>
+                                                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{article.summary}</p>
+                                                        <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Read more <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </section>
+                            </div>
+                        )}
+
+                        {activeTab === 'insights' && (
+                            <section>
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" /><div><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Strategic Insights & Ideas</h2><p className="text-xs sm:text-sm text-gray-600">Executive analysis and actionable recommendations</p></div></div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                                    {insightsData.map(insight => (
+                                        <div key={insight.id} onClick={() => setSelectedArticle(insight)} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-4 sm:p-5 border border-gray-200">
+                                            <div className="flex flex-wrap items-start justify-between mb-2 sm:mb-3 gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">{insight.category}</span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${insight.impact === 'Critical' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{insight.impact}</span>
+                                                </div>
+                                                <span className="text-xs text-gray-500">{insight.date}</span>
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base">{insight.title}</h3>
+                                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-3 mb-2 sm:mb-3">{insight.summary}</p>
+                                            <div className="space-y-1 mb-2 sm:mb-3">
+                                                {insight.keyPoints.slice(0, 2).map((point, idx) => (
+                                                    <div key={idx} className="flex items-start gap-2 text-xs text-gray-700">
+                                                        <span className="text-blue-600 font-bold">•</span><span className="line-clamp-1">{point}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex items-center text-purple-600 text-xs sm:text-sm font-medium">Read full analysis <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {activeTab === 'analytics' && (
+                            <section>
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Banking Sector Analytics</h2></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                    {analyticsData.map(chart => (
+                                        <div key={chart.id} className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
+                                            <h3 className="font-bold text-gray-900 mb-2 text-sm sm:text-base">{chart.title}</h3>
+                                            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">{chart.summary}</p>
+                                            <div className="h-40 sm:h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <BarChart3 className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-blue-600 mb-2" />
+                                                    <p className="text-xs sm:text-sm text-gray-600">Chart Visualization</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<BankDashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
