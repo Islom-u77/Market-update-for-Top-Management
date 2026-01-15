@@ -1,13 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Banking Intelligence Portal</title>
+    <title>Портал Банковской Аналитики</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     <style>
         * {
             -webkit-tap-highlight-color: transparent;
@@ -16,6 +23,7 @@
             margin: 0;
             padding: 0;
             overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
         .line-clamp-1 { 
             overflow: hidden;
@@ -35,7 +43,6 @@
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
         }
-        /* Mobile optimizations */
         @media (max-width: 768px) {
             .mobile-text-sm { font-size: 0.875rem; }
             .mobile-text-base { font-size: 1rem; }
@@ -47,13 +54,29 @@
             .mobile-gap-2 { gap: 0.5rem; }
             .mobile-mb-3 { margin-bottom: 0.75rem; }
         }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(59, 130, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
+
+        // API Configuration
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
         // Icons
         const Globe = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>;
@@ -63,59 +86,138 @@
         const ArrowLeft = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>;
         const ExternalLink = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>;
 
-        // DATA - Update your content here
-        const newsData = {
+        // API Functions
+        async function fetchFromSupabase(table, filters = {}) {
+            let url = `${SUPABASE_URL}/rest/v1/${table}?select=*`;
+            
+            if (filters.region) {
+                url += `&region=eq.${filters.region}`;
+            }
+            if (filters.order) {
+                url += `&order=${filters.order}`;
+            }
+            
+            const response = await fetch(url, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки данных');
+            }
+            
+            return await response.json();
+        }
+
+        // Fallback data (same as before, for development)
+        const fallbackNewsData = {
             uzbekistan: [
-                { id: 'uz1', title: 'Central Bank Announces New Digital Banking Regulations', summary: 'New regulatory framework aims to enhance digital banking security and innovation in Uzbekistan.', content: 'The Central Bank of Uzbekistan has introduced comprehensive regulations for digital banking services, effective from Q2 2026. The new framework includes enhanced KYC requirements, cybersecurity standards, and provisions for digital-only banking licenses.', date: '2026-01-15', category: 'Regulation' },
-                { id: 'uz2', title: 'Uzbekistan Banking Sector Shows 15% Growth in Q4 2025', summary: 'Strong economic performance drives banking sector expansion.', content: 'The Uzbekistan banking sector demonstrated robust growth with total assets increasing by 15% year-over-year. Retail lending grew by 22%, while corporate lending increased by 18%.', date: '2026-01-14', category: 'Market Update' },
-                { id: 'uz3', title: 'Major Banks Partner for Cross-Border Payment Platform', summary: 'Five leading banks launch unified regional payment system.', content: 'Five major Uzbekistan banks have announced a strategic partnership to develop a unified cross-border payment platform. The initiative aims to reduce transaction costs by 40%.', date: '2026-01-13', category: 'Innovation' },
-                { id: 'uz4', title: 'Green Finance Initiative Receives Government Backing', summary: 'New fund established to support sustainable banking projects.', content: 'The government has allocated $500 million to support green finance initiatives in the banking sector. Banks can now access preferential funding for environmentally sustainable projects.', date: '2026-01-12', category: 'Sustainability' },
-                { id: 'uz5', title: 'SME Lending Programs Expanded Nationwide', summary: 'Banks introduce new credit lines for small and medium enterprises.', content: 'Major banks have launched expanded SME lending programs with simplified application processes and flexible terms. The programs target technology, agriculture, and manufacturing sectors.', date: '2026-01-11', category: 'Lending' },
-                { id: 'uz6', title: 'Banking Cybersecurity Framework Updated', summary: 'Enhanced security protocols implemented across all institutions.', content: 'The banking sector has adopted new cybersecurity protocols following international best practices. All banks must implement multi-factor authentication and real-time fraud detection.', date: '2026-01-10', category: 'Security' },
-                { id: 'uz7', title: 'Islamic Banking Services Gain Momentum', summary: 'Sharia-compliant products see 30% increase in adoption.', content: 'Islamic banking services have experienced significant growth with deposits in Sharia-compliant accounts increasing by 30% in the past quarter.', date: '2026-01-09', category: 'Product Innovation' },
-                { id: 'uz8', title: 'Banking Sector Employment Reaches Record High', summary: 'Digital transformation creates 15,000 new positions.', content: 'The banking sector has added 15,000 new positions in 2025, driven by digital transformation initiatives. New roles focus on data analytics and cybersecurity.', date: '2026-01-08', category: 'Employment' }
+                { id: 'uz1', title: 'Маркетплейс для бизнеса представлен прямо в ANORBANK', summary: 'ANORBANK запустил маркетплейс прямо в приложении банка. Теперь бизнес может закупать всё — от мебели до техники — в режиме «одного окна» и прозрачной историей расходов.', content: 'Новая платформа позволяет предпринимателям управлять всеми покупками через единое окно с полной прозрачностью расходов и автоматической интеграцией с бухгалтерией.', date: '2026-01-15', category: 'Регулирование', region: 'uzbekistan' },
+                { id: 'uz2', title: 'Банковский сектор Узбекистана показал рост 15% в Q4 2025', summary: 'Сильные экономические показатели стимулируют расширение банковского сектора.', content: 'Банковский сектор Узбекистана продемонстрировал устойчивый рост с увеличением общих активов на 15% год к году. Розничное кредитование выросло на 22%, корпоративное — на 18%.', date: '2026-01-14', category: 'Обзор рынка', region: 'uzbekistan' },
+                { id: 'uz3', title: 'Крупные банки объединяются для трансграничной платформы', summary: 'Пять ведущих банков запускают единую региональную платежную систему.', content: 'Пять крупных банков Узбекистана объявили о стратегическом партнерстве для разработки единой трансграничной платежной платформы. Инициатива направлена на сокращение транзакционных издержек на 40%.', date: '2026-01-13', category: 'Инновации', region: 'uzbekistan' },
+                { id: 'uz4', title: 'Инициатива зеленого финансирования получила поддержку правительства', summary: 'Создан новый фонд для поддержки проектов устойчивого банкинга.', content: 'Правительство выделило $500 млн на поддержку инициатив зеленого финансирования в банковском секторе. Банки теперь могут получить льготное финансирование для экологически устойчивых проектов.', date: '2026-01-12', category: 'Устойчивость', region: 'uzbekistan' },
+                { id: 'uz5', title: 'Программы кредитования МСБ расширены по всей стране', summary: 'Банки вводят новые кредитные линии для малого и среднего бизнеса.', content: 'Крупные банки запустили расширенные программы кредитования МСБ с упрощенными процедурами подачи заявок и гибкими условиями. Программы нацелены на технологический, сельскохозяйственный и производственный секторы.', date: '2026-01-11', category: 'Кредитование', region: 'uzbekistan' },
+                { id: 'uz6', title: 'Обновлена структура кибербезопасности банков', summary: 'Усиленные протоколы безопасности внедрены во всех учреждениях.', content: 'Банковский сектор принял новые протоколы кибербезопасности, следуя международным лучшим практикам. Все банки должны внедрить многофакторную аутентификацию и обнаружение мошенничества в реальном времени.', date: '2026-01-10', category: 'Безопасность', region: 'uzbekistan' },
+                { id: 'uz7', title: 'Исламские банковские услуги набирают обороты', summary: 'Шариатские продукты показывают рост на 30%.', content: 'Исламские банковские услуги показали значительный рост: депозиты на шариатских счетах увеличились на 30% за последний квартал.', date: '2026-01-09', category: 'Инновации продуктов', region: 'uzbekistan' },
+                { id: 'uz8', title: 'Занятость в банковском секторе достигла рекордного уровня', summary: 'Цифровая трансформация создала 15,000 новых рабочих мест.', content: 'Банковский сектор добавил 15,000 новых рабочих мест в 2025 году благодаря инициативам цифровой трансформации. Новые роли сосредоточены на аналитике данных и кибербезопасности.', date: '2026-01-08', category: 'Трудоустройство', region: 'uzbekistan' }
             ],
             world: {
                 west: [
-                    { id: 'w1', title: 'Federal Reserve Maintains Interest Rates', summary: 'Fed holds rates steady amid economic uncertainty.', content: 'The Federal Reserve has decided to maintain current interest rates at 5.25-5.50% following its January meeting.', date: '2026-01-15', category: 'Monetary Policy' },
-                    { id: 'w2', title: 'European Banks Report Strong Q4 Earnings', summary: 'Major European financial institutions exceed profit expectations.', content: 'Leading European banks have reported stronger-than-expected Q4 earnings, with net profits up 12% year-over-year.', date: '2026-01-14', category: 'Earnings' }
+                    { id: 'w1', title: 'ФРС сохраняет процентные ставки', summary: 'ФРС удерживает ставки на фоне экономической неопределенности.', content: 'Федеральная резервная система решила сохранить текущие процентные ставки на уровне 5,25-5,50% после январского заседания.', date: '2026-01-15', category: 'Денежная политика', region: 'west' },
+                    { id: 'w2', title: 'Европейские банки сообщают о сильных доходах за Q4', summary: 'Крупные европейские финансовые учреждения превышают прогнозы по прибыли.', content: 'Ведущие европейские банки сообщили о более сильных, чем ожидалось, доходах за Q4, чистая прибыль выросла на 12% год к году.', date: '2026-01-14', category: 'Доходы', region: 'west' }
                 ],
                 middleEast: [
-                    { id: 'm1', title: 'GCC Banks Expand Digital Services', summary: 'Gulf banks invest $2 billion in fintech partnerships.', content: 'Gulf Cooperation Council banks have announced major investments in digital banking platforms including AI-powered customer service.', date: '2026-01-15', category: 'Digital Banking' },
-                    { id: 'm2', title: 'Saudi Arabia Launches Open Banking Framework', summary: 'New regulations promote financial data sharing and innovation.', content: 'Saudi Arabian Monetary Authority has introduced comprehensive open banking regulations enabling secure data sharing.', date: '2026-01-13', category: 'Regulation' }
+                    { id: 'm1', title: 'Банки стран ССАГПЗ расширяют цифровые сервисы', summary: 'Банки Персидского залива инвестируют $2 млрд в финтех-партнерства.', content: 'Банки Совета сотрудничества арабских государств Персидского залива объявили о крупных инвестициях в платформы цифрового банкинга, включая клиентский сервис на базе ИИ.', date: '2026-01-15', category: 'Цифровой банкинг', region: 'middleEast' },
+                    { id: 'm2', title: 'Саудовская Аравия запускает систему открытого банкинга', summary: 'Новые правила способствуют обмену финансовыми данными и инновациям.', content: 'Денежное управление Саудовской Аравии ввело комплексные правила открытого банкинга, обеспечивающие безопасный обмен данными.', date: '2026-01-13', category: 'Регулирование', region: 'middleEast' }
                 ],
                 cis: [
-                    { id: 'c1', title: 'Regional Payment Integration Accelerates', summary: 'CIS countries advance unified payment infrastructure.', content: 'Commonwealth of Independent States members have made significant progress in integrating payment systems for instant cross-border transfers.', date: '2026-01-14', category: 'Payments' },
-                    { id: 'c2', title: 'Kazakhstan Banking Sector Implements Basel III', summary: 'Banks strengthen capital requirements under new standards.', content: 'Kazakhstan has fully implemented Basel III banking regulations, strengthening the sector resilience and international credibility.', date: '2026-01-12', category: 'Regulation' }
+                    { id: 'c1', title: 'Ускоряется региональная интеграция платежей', summary: 'Страны СНГ продвигают единую платежную инфраструктуру.', content: 'Члены Содружества Независимых Государств добились значительного прогресса в интеграции платежных систем для мгновенных трансграничных переводов.', date: '2026-01-14', category: 'Платежи', region: 'cis' },
+                    { id: 'c2', title: 'Банковский сектор Казахстана внедряет Базель III', summary: 'Банки укрепляют требования к капиталу в соответствии с новыми стандартами.', content: 'Казахстан полностью внедрил банковские регуляции Базель III, укрепляя устойчивость сектора и международное доверие.', date: '2026-01-12', category: 'Регулирование', region: 'cis' }
                 ],
                 east: [
-                    { id: 'e1', title: 'China Eases Banking Regulations for Foreign Investors', summary: 'New policies attract international financial institutions.', content: 'Chinese regulators have announced relaxed rules for foreign banks, including reduced capital requirements and expanded business scope.', date: '2026-01-15', category: 'International Banking' },
-                    { id: 'e2', title: 'Singapore Fintech Hub Reaches New Milestone', summary: '500+ fintech companies now operating in Singapore.', content: 'Singapore has cemented its position as Asia leading fintech hub with over 500 companies now operating in the city-state.', date: '2026-01-13', category: 'Fintech' }
+                    { id: 'e1', title: 'Китай смягчает банковские правила для иностранных инвесторов', summary: 'Новая политика привлекает международные финансовые учреждения.', content: 'Китайские регуляторы объявили о смягчении правил для иностранных банков, включая сниженные требования к капиталу и расширенный спектр деятельности.', date: '2026-01-15', category: 'Международный банкинг', region: 'east' },
+                    { id: 'e2', title: 'Финтех-хаб Сингапура достигает новой вехи', summary: 'Более 500 финтех-компаний работают в Сингапуре.', content: 'Сингапур закрепил свою позицию ведущего финтех-хаба Азии: более 500 компаний работают в городе-государстве.', date: '2026-01-13', category: 'Финтех', region: 'east' }
                 ]
             }
         };
 
-        const insightsData = [
-            { id: 'i1', title: 'Digital Transformation ROI Analysis', summary: 'Comprehensive analysis of digital banking investments and returns across the sector', content: 'Our analysis reveals that banks investing heavily in digital transformation are seeing 3-4x ROI within 18 months. Key drivers include reduced operational costs, increased customer acquisition, and improved retention.', date: '2026-01-15', category: 'Strategic Analysis', impact: 'High', keyPoints: ['3-4x ROI within 18 months', '35% reduction in operational costs', '45% growth in customer acquisition', '60% increase in customer lifetime value'] },
-            { id: 'i2', title: 'Risk Concentration in SME Lending Portfolio', summary: 'Analysis of sector concentration risks and diversification opportunities', content: 'Current SME portfolio shows 42% concentration in retail and services sectors, creating vulnerability to consumer spending fluctuations. Recommendation: Diversify into technology and healthcare sectors.', date: '2026-01-14', category: 'Risk Management', impact: 'Critical', keyPoints: ['42% concentration in vulnerable sectors', '2-3x higher default rates in downturns', '40% lower defaults in tech/healthcare', '25% risk reduction through diversification'] },
-            { id: 'i3', title: 'Competitive Analysis: Market Share Opportunities', summary: 'Strategic positioning analysis and growth opportunities in key segments', content: 'Market analysis reveals opportunities in affluent customer segment where our market share is only 12%. HNI customers generate 4x revenue per customer with 90% lower acquisition costs.', date: '2026-01-13', category: 'Market Strategy', impact: 'High', keyPoints: ['Only 12% share in HNI segment', '4x revenue per HNI customer', '90% lower acquisition costs', '25% market share target in 24 months'] },
-            { id: 'i4', title: 'Operational Efficiency: Branch Network Optimization', summary: 'Data-driven approach to branch transformation and cost optimization', content: 'Branch analysis shows 30% operate below break-even, contributing to 15% of costs while serving only 8% of transactions. Recommendation: Transform underperforming branches into digital advisory centers.', date: '2026-01-12', category: 'Operations', impact: 'High', keyPoints: ['30% of branches below break-even', '78% prefer digital channels', '$12M annual cost reduction', '14-month payback period'] },
-            { id: 'i5', title: 'Cybersecurity Investment Priorities', summary: 'Assessment of security vulnerabilities and required investments', content: 'Security audit reveals critical gaps in API security and fraud detection. Banks with advanced security frameworks experience 85% fewer successful attacks. Immediate $8M investment recommended.', date: '2026-01-11', category: 'Technology & Security', impact: 'Critical', keyPoints: ['Critical gaps in API security', '85% fewer attacks with advanced frameworks', '$8M investment required', 'Prevents $45M in potential fraud losses'] },
-            { id: 'i6', title: 'Customer Experience Gap Analysis', summary: 'Insights from customer satisfaction data and competitive benchmarking', content: 'NPS analysis shows we trail market leaders by 18 points. Primary pain points: loan approval time, mobile app rating, and customer service response time. 65% of exits cite slow service.', date: '2026-01-10', category: 'Customer Experience', impact: 'High', keyPoints: ['18-point NPS gap', '65% exits cite slow service', 'Loan approval 6x slower', 'Target NPS 68 in 6 months'] },
-            { id: 'i7', title: 'Regulatory Compliance: Upcoming Changes Impact', summary: 'Analysis of new regulatory requirements and preparation roadmap', content: 'Basel III and enhanced AML regulations require infrastructure upgrades by Q3 2026. Compliance costs estimated at $15M but early adoption creates competitive advantage.', date: '2026-01-09', category: 'Regulatory & Compliance', impact: 'Critical', keyPoints: ['$15M investment by Q3 2026', 'Only 20% of banks prepared', 'Non-compliance penalties $25-50M', 'Early adoption unlocks $30M opportunities'] },
-            { id: 'i8', title: 'Talent Strategy: Building Future-Ready Workforce', summary: 'Skills gap analysis and talent development recommendations', content: 'Critical skills gaps in data science, AI/ML, and digital product management. Market demand growing 40% annually. Recommendation: Establish Digital Academy for upskilling 200 employees annually.', date: '2026-01-08', category: 'Human Capital', impact: 'High', keyPoints: ['Critical shortage in data science', '40% annual growth in demand', 'Current recruitment takes 6 months', '$5M investment saves $8M in hiring'] }
+        const fallbackInsightsData = [
+            { id: 'i1', title: 'Анализ ROI цифровой трансформации', summary: 'Комплексный анализ инвестиций в цифровой банкинг и доходности по сектору', content: 'Наш анализ показывает, что банки, активно инвестирующие в цифровую трансформацию, получают ROI в 3-4 раза в течение 18 месяцев. Ключевые драйверы: снижение операционных затрат, рост привлечения клиентов и улучшение удержания.', date: '2026-01-15', category: 'Стратегический анализ', impact: 'Высокое', keyPoints: ['ROI 3-4x в течение 18 месяцев', 'Снижение операционных затрат на 35%', 'Рост привлечения клиентов на 45%', 'Увеличение ценности клиента на 60%'] },
+            { id: 'i2', title: 'Концентрация рисков в портфеле МСБ', summary: 'Анализ рисков концентрации по секторам и возможностей диверсификации', content: 'Текущий портфель МСБ показывает 42% концентрацию в розничном секторе и услугах, создавая уязвимость к колебаниям потребительских расходов. Рекомендация: Диверсификация в технологический и здравоохранительный секторы.', date: '2026-01-14', category: 'Управление рисками', impact: 'Критическое', keyPoints: ['42% концентрация в уязвимых секторах', 'В 2-3 раза выше дефолты при спадах', 'На 40% ниже дефолты в тех/здравоохранении', 'Снижение риска на 25% через диверсификацию'] },
+            { id: 'i3', title: 'Конкурентный анализ: Возможности доли рынка', summary: 'Анализ стратегического позиционирования и возможностей роста в ключевых сегментах', content: 'Анализ рынка выявляет возможности в сегменте состоятельных клиентов, где наша доля составляет всего 12%. HNI-клиенты генерируют в 4 раза больше доходов на клиента при на 90% более низких затратах на привлечение.', date: '2026-01-13', category: 'Стратегия рынка', impact: 'Высокое', keyPoints: ['Только 12% доли в HNI-сегменте', 'В 4 раза больше доходов на HNI-клиента', 'На 90% ниже затраты на привлечение', 'Цель 25% доли рынка за 24 месяца'] },
+            { id: 'i4', title: 'Операционная эффективность: Оптимизация сети филиалов', summary: 'Подход на основе данных к трансформации филиалов и оптимизации затрат', content: 'Анализ филиалов показывает, что 30% работают ниже точки безубыточности, составляя 15% затрат при обслуживании только 8% транзакций. Рекомендация: Преобразовать неэффективные филиалы в цифровые консультационные центры.', date: '2026-01-12', category: 'Операции', impact: 'Высокое', keyPoints: ['30% филиалов ниже безубыточности', '78% предпочитают цифровые каналы', '$12M годовая экономия', 'Окупаемость за 14 месяцев'] },
+            { id: 'i5', title: 'Приоритеты инвестиций в кибербезопасность', summary: 'Оценка уязвимостей безопасности и необходимых инвестиций', content: 'Аудит безопасности выявляет критические пробелы в безопасности API и обнаружении мошенничества. Банки с продвинутыми системами безопасности испытывают на 85% меньше успешных атак. Рекомендуются немедленные инвестиции в $8M.', date: '2026-01-11', category: 'Технологии и безопасность', impact: 'Критическое', keyPoints: ['Критические пробелы в безопасности API', 'На 85% меньше атак с продвинутыми системами', 'Требуются инвестиции $8M', 'Предотвращает потери $45M от мошенничества'] },
+            { id: 'i6', title: 'Анализ разрыва в клиентском опыте', summary: 'Анализ данных удовлетворенности клиентов и конкурентного бенчмаркинга', content: 'Анализ NPS показывает, что мы отстаем от лидеров рынка на 18 пунктов. Основные проблемы: время одобрения кредита, рейтинг мобильного приложения и время отклика клиентского сервиса. 65% ушедших клиентов ссылаются на медленное обслуживание.', date: '2026-01-10', category: 'Клиентский опыт', impact: 'Высокое', keyPoints: ['Разрыв NPS в 18 пунктов', '65% уходов из-за медленного сервиса', 'Одобрение кредита в 6 раз медленнее', 'Цель NPS 68 за 6 месяцев'] },
+            { id: 'i7', title: 'Соответствие регуляциям: Влияние предстоящих изменений', summary: 'Анализ новых регуляторных требований и дорожная карта подготовки', content: 'Базель III и усиленные требования AML требуют обновления инфраструктуры к Q3 2026. Затраты на соответствие оцениваются в $15M, но раннее принятие создает конкурентное преимущество.', date: '2026-01-09', category: 'Регулирование и соответствие', impact: 'Критическое', keyPoints: ['Инвестиции $15M к Q3 2026', 'Только 20% банков готовы', 'Штрафы за несоответствие $25-50M', 'Раннее принятие открывает возможности $30M'] },
+            { id: 'i8', title: 'Стратегия талантов: Создание кадров будущего', summary: 'Анализ разрыва навыков и рекомендации по развитию талантов', content: 'Критические разрывы навыков в науке о данных, AI/ML и управлении цифровыми продуктами. Спрос на рынке растет на 40% ежегодно. Рекомендация: Создать Цифровую академию для повышения квалификации 200 сотрудников ежегодно.', date: '2026-01-08', category: 'Человеческий капитал', impact: 'Высокое', keyPoints: ['Критический дефицит в науке о данных', 'Рост спроса на 40% ежегодно', 'Текущий набор занимает 6 месяцев', 'Инвестиции $5M экономят $8M на найме'] }
         ];
 
-        const analyticsData = [
-            { id: 'a1', title: 'Banking Sector Asset Growth', summary: 'Year-over-year analysis of total banking assets' },
-            { id: 'a2', title: 'Loan Portfolio Distribution', summary: 'Current breakdown of lending activities by sector' },
-            { id: 'a3', title: 'Digital Banking Adoption Rate', summary: 'Percentage of customers using digital channels' },
-            { id: 'a4', title: 'Non-Performing Loans Ratio', summary: 'NPL trend analysis across the banking sector' }
+        const fallbackAnalyticsData = [
+            { id: 'a1', title: 'Рост активов банковского сектора', summary: 'Анализ год к году общих банковских активов' },
+            { id: 'a2', title: 'Распределение кредитного портфеля', summary: 'Текущая разбивка кредитной деятельности по секторам' },
+            { id: 'a3', title: 'Уровень принятия цифрового банкинга', summary: 'Процент клиентов, использующих цифровые каналы' },
+            { id: 'a4', title: 'Коэффициент проблемных кредитов', summary: 'Анализ тренда NPL по банковскому сектору' }
         ];
 
         function BankDashboard() {
             const [selectedArticle, setSelectedArticle] = useState(null);
             const [activeTab, setActiveTab] = useState('news');
+            const [newsData, setNewsData] = useState(fallbackNewsData);
+            const [insightsData, setInsightsData] = useState(fallbackInsightsData);
+            const [analyticsData, setAnalyticsData] = useState(fallbackAnalyticsData);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            async function loadData() {
+                // Only try to load from API if credentials are configured
+                if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+                    console.log('Using fallback data - Supabase not configured');
+                    return;
+                }
+
+                setLoading(true);
+                setError(null);
+
+                try {
+                    // Load news
+                    const uzbekNews = await fetchFromSupabase('news', { region: 'uzbekistan', order: 'date.desc' });
+                    const westNews = await fetchFromSupabase('news', { region: 'west', order: 'date.desc' });
+                    const meNews = await fetchFromSupabase('news', { region: 'middleEast', order: 'date.desc' });
+                    const cisNews = await fetchFromSupabase('news', { region: 'cis', order: 'date.desc' });
+                    const eastNews = await fetchFromSupabase('news', { region: 'east', order: 'date.desc' });
+
+                    setNewsData({
+                        uzbekistan: uzbekNews,
+                        world: {
+                            west: westNews,
+                            middleEast: meNews,
+                            cis: cisNews,
+                            east: eastNews
+                        }
+                    });
+
+                    // Load insights
+                    const insights = await fetchFromSupabase('insights', { order: 'date.desc' });
+                    setInsightsData(insights);
+
+                    // Load analytics
+                    const analytics = await fetchFromSupabase('analytics');
+                    setAnalyticsData(analytics);
+
+                } catch (err) {
+                    console.error('Error loading data:', err);
+                    setError('Ошибка загрузки данных. Используются демо-данные.');
+                    // Keep using fallback data
+                } finally {
+                    setLoading(false);
+                }
+            }
 
             if (selectedArticle) {
                 return (
@@ -123,7 +225,7 @@
                         <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
                                 <button onClick={() => setSelectedArticle(null)} className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm sm:text-base">
-                                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Back to Dashboard
+                                    <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />Назад к панели
                                 </button>
                             </div>
                         </header>
@@ -132,7 +234,7 @@
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                                     <span className="text-xs sm:text-sm font-semibold text-blue-600 bg-blue-50 px-2 sm:px-3 py-1 rounded">{selectedArticle.category}</span>
                                     {selectedArticle.impact && (
-                                        <span className={`text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded ${selectedArticle.impact === 'Critical' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{selectedArticle.impact} Impact</span>
+                                        <span className={`text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 rounded ${selectedArticle.impact === 'Критическое' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{selectedArticle.impact} влияние</span>
                                     )}
                                     <span className="text-xs sm:text-sm text-gray-500">{selectedArticle.date}</span>
                                 </div>
@@ -141,7 +243,7 @@
                                     <p className="text-base sm:text-lg text-gray-700 leading-relaxed mb-4 sm:mb-6">{selectedArticle.summary}</p>
                                     {selectedArticle.keyPoints && (
                                         <div className="bg-blue-50 border-l-4 border-blue-600 p-4 sm:p-6 mb-4 sm:mb-6 rounded-r">
-                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Key Takeaways</h3>
+                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">Ключевые выводы</h3>
                                             <ul className="space-y-2">
                                                 {selectedArticle.keyPoints.map((point, idx) => (
                                                     <li key={idx} className="flex items-start gap-2 sm:gap-3">
@@ -166,20 +268,30 @@
                 <div className="min-h-screen bg-gray-100">
                     <header className="bg-white shadow-sm border-b sticky top-0 z-10">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Banking Intelligence Portal</h1>
-                            <p className="text-sm sm:text-base text-gray-600 mt-1">Executive Dashboard for Market Insights</p>
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Портал Банковской Аналитики</h1>
+                            <p className="text-sm sm:text-base text-gray-600 mt-1">Панель управления для рыночной аналитики</p>
+                            {error && (
+                                <div className="mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded">{error}</div>
+                            )}
                         </div>
                     </header>
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+                        {loading && (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="loading"></div>
+                                <span className="ml-3 text-gray-600">Загрузка данных...</span>
+                            </div>
+                        )}
+                        
                         <div className="flex gap-2 sm:gap-4 mb-4 sm:mb-6 overflow-x-auto pb-2">
                             <button onClick={() => setActiveTab('news')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'news' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />News & Updates
+                                <Globe className="w-4 h-4 sm:w-5 sm:h-5" />Новости и обновления
                             </button>
                             <button onClick={() => setActiveTab('insights')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'insights' ? 'bg-purple-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />Key Insights
+                                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />Ключевые идеи
                             </button>
                             <button onClick={() => setActiveTab('analytics')} className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all whitespace-nowrap text-sm sm:text-base ${activeTab === 'analytics' ? 'bg-green-600 text-white shadow-lg' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>
-                                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />Market Dynamics
+                                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5" />Динамика рынка
                             </button>
                         </div>
 
@@ -188,7 +300,7 @@
                                 <section>
                                     <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                                         <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Uzbekistan Banking & Finance</h2>
+                                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Банки и финансы Узбекистана</h2>
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                                         {newsData.uzbekistan.map(article => (
@@ -199,16 +311,18 @@
                                                 </div>
                                                 <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base">{article.title}</h3>
                                                 <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{article.summary}</p>
-                                                <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Read more <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                                <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Читать далее <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
                                             </div>
                                         ))}
                                     </div>
                                 </section>
                                 <section>
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4"><Globe className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Global Markets</h2></div>
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4"><Globe className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Мировые рынки</h2></div>
                                     {Object.entries(newsData.world).map(([region, articles]) => (
                                         <div key={region} className="mb-4 sm:mb-6">
-                                            <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3 capitalize">{region === 'middleEast' ? 'Middle East' : region === 'cis' ? 'CIS Region' : region === 'west' ? 'Western Markets' : 'Eastern Markets'}</h3>
+                                            <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3 capitalize">
+                                                {region === 'middleEast' ? 'Ближний Восток' : region === 'cis' ? 'СНГ регион' : region === 'west' ? 'Западные рынки' : 'Восточные рынки'}
+                                            </h3>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                                                 {articles.map(article => (
                                                     <div key={article.id} onClick={() => setSelectedArticle(article)} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-3 sm:p-4 border border-gray-200">
@@ -218,7 +332,7 @@
                                                         </div>
                                                         <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm sm:text-base">{article.title}</h3>
                                                         <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">{article.summary}</p>
-                                                        <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Read more <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                                        <div className="mt-3 flex items-center text-blue-600 text-xs sm:text-sm font-medium">Читать далее <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -230,14 +344,14 @@
 
                         {activeTab === 'insights' && (
                             <section>
-                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" /><div><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Strategic Insights & Ideas</h2><p className="text-xs sm:text-sm text-gray-600">Executive analysis and actionable recommendations</p></div></div>
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" /><div><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Стратегические идеи и инсайты</h2><p className="text-xs sm:text-sm text-gray-600">Анализ для руководства и практические рекомендации</p></div></div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                                     {insightsData.map(insight => (
                                         <div key={insight.id} onClick={() => setSelectedArticle(insight)} className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer p-4 sm:p-5 border border-gray-200">
                                             <div className="flex flex-wrap items-start justify-between mb-2 sm:mb-3 gap-2">
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">{insight.category}</span>
-                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${insight.impact === 'Critical' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{insight.impact}</span>
+                                                    <span className={`text-xs font-semibold px-2 py-1 rounded ${insight.impact === 'Критическое' ? 'text-red-600 bg-red-50' : 'text-orange-600 bg-orange-50'}`}>{insight.impact}</span>
                                                 </div>
                                                 <span className="text-xs text-gray-500">{insight.date}</span>
                                             </div>
@@ -250,7 +364,7 @@
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="flex items-center text-purple-600 text-xs sm:text-sm font-medium">Read full analysis <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
+                                            <div className="flex items-center text-purple-600 text-xs sm:text-sm font-medium">Полный анализ <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 ml-1" /></div>
                                         </div>
                                     ))}
                                 </div>
@@ -259,7 +373,7 @@
 
                         {activeTab === 'analytics' && (
                             <section>
-                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Banking Sector Analytics</h2></div>
+                                <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6"><BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" /><h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Аналитика банковского сектора</h2></div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                     {analyticsData.map(chart => (
                                         <div key={chart.id} className="bg-white rounded-lg shadow p-4 sm:p-6 border border-gray-200">
@@ -268,7 +382,7 @@
                                             <div className="h-40 sm:h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded flex items-center justify-center">
                                                 <div className="text-center">
                                                     <BarChart3 className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-blue-600 mb-2" />
-                                                    <p className="text-xs sm:text-sm text-gray-600">Chart Visualization</p>
+                                                    <p className="text-xs sm:text-sm text-gray-600">Визуализация графика</p>
                                                 </div>
                                             </div>
                                         </div>
